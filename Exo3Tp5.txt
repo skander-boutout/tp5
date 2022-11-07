@@ -1,0 +1,76 @@
+const { readFileSync, readdirSync, lstatSync } = require("fs");
+
+
+
+function chercheInTxt (path, regex) {
+    try {
+        if (path.toLowerCase().endsWith(".txt")) {
+            let TxtFileText = readFileSync(path, "utf-8");
+            if (TxtFileText.search(regex) != -1) return true
+        }
+        return false
+    } catch (err) {
+        return false
+    }
+}
+
+
+
+function chercheInDirectory(path, regex) {
+    try {
+        let DirContent = readdirSync(path);
+        let result = [];
+        DirContent.forEach((file) => {
+            let state = lstatSync(path + "/" + file);
+            if (state.isDirectory()) {
+                let dirResult = chercheInDirectory(path + "/" + file, regex);
+                dirResult.length != 0 ? result.push(...dirResult) : null
+            } else if (file.toLowerCase().endsWith(".txt")) {
+                chercheInTxt(path + "/" + file, regex) ? result.push(path + "/" + file) : null
+            }
+        })
+        return result
+    } catch (err) {
+        return []
+    }
+}
+
+
+
+function SearchOnlyDirectTxt(regexWord, ...args) {
+    let wordInRegex = new RegExp(regexWord, "i");
+    let result = [];
+    args.forEach((path) => {
+        chercheInTxt(path, wordInRegex) ? result.push(path) : null
+    });
+    if (result.length == 0) return "None"
+    return result
+}
+
+
+
+function SearchWithSubPathTxt(regexWord, ...args) {
+    let wordInRegex = new RegExp(regexWord, "i");
+    let result = [];
+    args.forEach((path) => {
+        let state = lstatSync(path);
+        if (path.toLowerCase().endsWith(".txt")) {
+            chercheInTxt(path, wordInRegex) ? result.push(path) : null
+        } else if (state.isDirectory()) {
+            let dirResult = chercheInDirectory(path, wordInRegex);
+            dirResult.length != 0 ? result.push(...dirResult) : null
+        }
+    });
+    if (result.length == 0) 
+    return "None"
+    return result
+}
+
+
+
+// la question A :
+console.log(SearchOnlyDirectTxt  ("cherche", "./content-1.txt", "./content-2.txt"));
+
+
+// la question B :
+console.log(SearchWithSubPathTxt ("cherche", "./content-1.txt", "./content-2.txt", "./welcome"));
